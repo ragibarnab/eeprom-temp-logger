@@ -14,3 +14,8 @@ Then upload using the .bin, .hex, or .elf files.
 2. The .ioc file is also there to generate code using CubeMX for other IDEs. Simply copy the [main.c](Core/Src/main.c) source file after generation.
 
 
+## Temperature Sensing
+
+![Serial Com](/images/serial_com.png)
+
+Above shows the temperature reading of the sensor in the serial monitor after I have let go off my thumb from the sensor for less than a second. 12-bit or higher resolution digital temperature sensors are usually only found in surface mount packages, like the one I bought, so I used a SMD-to-DIP adapter that I soldered the sensor onto for this project. The digital temperature readings are in two's complement format, according to datasheet by Ti, with 0.0625 degrees Celsius/LSB. Decoding the 12-bit digital format is specified as well if you want to read the values in the EEPROM.
