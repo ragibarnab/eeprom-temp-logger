@@ -70,22 +70,22 @@ int main(void)
 	MX_USART2_UART_Init();
 
 	/*
-		function below samples from the tmp75b sensor at a period of 100ms
+		function below samples from the tmp75b sensor at a period of 100 ms
 		and will log it into the eeprom from the very beginning to the end
-		of its memory. It will light the LED on PA5 when done.
+		of its memory. It will light the LED on PA5 when done. The period
+		could be much longer (HAL_MAX_DELAY)
 	*/
 	EEPROM_LogTemp(100);
 
 	// tries to read the last byte of the eeprom to make sure it finished
 	uint8_t spi_buf[16];
 	char uart_buf[64];
-	EEPROM_ReadTemp(EEPROM_MAX_BYTES - 2, spi_buf, uart_buf);	// reads the last reading from the eeprom
+	EEPROM_ReadTemp(EEPROM_MAX_BYTES - 2, spi_buf, uart_buf); 
 
 	/* Infinite loop */
 
 	while (1)
 	{
-
 	}
 }
 
@@ -250,100 +250,86 @@ static void TMP75B_OS_Read(uint8_t *i2c_buf, char *uart_buf)
 {
 	i2c_buf[0] = REG_CONFIG;
 	i2c_buf[1] = OS_MODE | SD_MODE;
-	HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, TMP75B_ADDR,
-													i2c_buf, 2, HAL_MAX_DELAY);
+	HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, TMP75B_ADDR, i2c_buf, 2, HAL_MAX_DELAY);
 	if (ret != HAL_OK)
 	{
 		strcpy(uart_buf, "OS Tx Error\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-						  HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 	}
 	else
 		HAL_Delay(50); // allow time for conversion
 
 	i2c_buf[0] = REG_TEMP;
-	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP75B_ADDR, i2c_buf, 1,
-								  HAL_MAX_DELAY);
+	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP75B_ADDR, i2c_buf, 1, HAL_MAX_DELAY);
 	if (ret != HAL_OK)
 		strcpy(uart_buf, "TEMP Tx Error\r\n");
 	else
 	{
-		ret = HAL_I2C_Master_Receive(&hi2c1, TMP75B_ADDR, i2c_buf, 2,
-									 HAL_MAX_DELAY);
+		ret = HAL_I2C_Master_Receive(&hi2c1, TMP75B_ADDR, i2c_buf, 2, HAL_MAX_DELAY);
 		if (ret != HAL_OK)
 			strcpy(uart_buf, "TEMP Rx Error\r\n");
 		else
 		{
 			uint16_t val = (i2c_buf[0] << 4) + (i2c_buf[1] >> 4);
 			float temp_c = 0.0625 * val * 100;
-			sprintf(uart_buf, "ABS TEMP READ: %u.%02u C\r\n",
-					((unsigned int)temp_c / 100),
-					((unsigned int)temp_c % 100));
+			sprintf(uart_buf, "ABS TEMP READ: %u.%02u C\r\n", 
+			((unsigned int)temp_c / 100), 
+			((unsigned int)temp_c % 100));
 		}
 	}
-	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-					  HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 }
 
 static void TMP75B_Reset(uint8_t *i2c_buf, char *uart_buf)
 {
 	i2c_buf[0] = REG_RESET;
-	HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, GEN_CALL_ADDR,
-													i2c_buf, 1, HAL_MAX_DELAY);
+	HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, GEN_CALL_ADDR, i2c_buf, 1, HAL_MAX_DELAY);
 	if (ret != HAL_OK)
 		strcpy(uart_buf, "RESET Error\r\n");
 	else
 		strcpy(uart_buf, "RESET Success\r\n");
-	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-					  HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 }
 
 static void TMP75B_ConfigRead(uint8_t *i2c_buf, char *uart_buf)
 {
 	i2c_buf[0] = REG_CONFIG;
-	HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, TMP75B_ADDR,
-													i2c_buf, 1, HAL_MAX_DELAY);
+	HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, TMP75B_ADDR, i2c_buf, 1, HAL_MAX_DELAY);
 	if (ret != HAL_OK)
 		strcpy(uart_buf, "CONFIG Tx Error\r\n");
 	else
 	{
-		ret = HAL_I2C_Master_Receive(&hi2c1, TMP75B_ADDR, i2c_buf, 2,
-									 HAL_MAX_DELAY);
+		ret = HAL_I2C_Master_Receive(&hi2c1, TMP75B_ADDR, i2c_buf, 2, HAL_MAX_DELAY);
 		if (ret != HAL_OK)
 			strcpy(uart_buf, "CONFIG Rx Error\r\n");
 		else
-			sprintf(uart_buf, "CONFIG READ: 0x%02x 0x%02x\r\n",
-					(unsigned int)i2c_buf[0], (unsigned int)i2c_buf[1]);
+			sprintf(uart_buf, "CONFIG READ: 0x%02x 0x%02x\r\n", 
+			(unsigned int)i2c_buf[0], (unsigned int)i2c_buf[1]);
 	}
-	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-					  HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 }
 
 static void TMP75B_ShutdownEnable(uint8_t *i2c_buf, char *uart_buf)
 {
 	i2c_buf[0] = REG_CONFIG;
 	i2c_buf[1] = SD_MODE;
-	HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, TMP75B_ADDR,
-													i2c_buf, 2, HAL_MAX_DELAY);
+	HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, TMP75B_ADDR, i2c_buf, 2, HAL_MAX_DELAY);
 	if (ret != HAL_OK)
 		strcpy(uart_buf, "CONFIG Tx Error\r\n");
 	else
 		strcpy(uart_buf, "SD Mode ON\r\n");
-	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-					  HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 }
 
 static void EEPROM_WriteEnable(char *uart_buf)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-	HAL_StatusTypeDef ret = HAL_SPI_Transmit(&hspi3, (uint8_t *)&EEPROM_WREN, 1,
-											 HAL_MAX_DELAY);
+	HAL_StatusTypeDef ret = HAL_SPI_Transmit(&hspi3, (uint8_t *)&EEPROM_WREN, 1, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
 	if (ret != HAL_OK)
 	{
 		strcpy(uart_buf, "WREN Error\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-						  HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 	}
 }
 
@@ -367,13 +353,11 @@ static void EEPROM_Write(uint16_t addr, uint8_t *spi_buf, uint8_t size,
 	EEPROM_WriteEnable(uart_buf);
 	uint8_t addr_buf[] = {(uint8_t)(addr >> 8), (uint8_t)(addr)};
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-	HAL_StatusTypeDef ret = HAL_SPI_Transmit(&hspi3, (uint8_t *)&EEPROM_WRITE,
-											 1, HAL_MAX_DELAY);
+	HAL_StatusTypeDef ret = HAL_SPI_Transmit(&hspi3, (uint8_t *)&EEPROM_WRITE, 1, HAL_MAX_DELAY);
 	if (ret != HAL_OK)
 	{
 		strcpy(uart_buf, "WRITE Error\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-						  HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 	}
 	else
 	{
@@ -381,18 +365,15 @@ static void EEPROM_Write(uint16_t addr, uint8_t *spi_buf, uint8_t size,
 		if (ret != HAL_OK)
 		{
 			strcpy(uart_buf, "WRITE Error\r\n");
-			HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-							  HAL_MAX_DELAY);
+			HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 		}
 		else
 		{
-			ret = HAL_SPI_Transmit(&hspi3, spi_buf, size,
-								   HAL_MAX_DELAY);
+			ret = HAL_SPI_Transmit(&hspi3, spi_buf, size, HAL_MAX_DELAY);
 			if (ret != HAL_OK)
 			{
 				strcpy(uart_buf, "WRITE Error\r\n");
-				HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf,
-								  strlen(uart_buf), HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 			}
 		}
 	}
@@ -408,10 +389,8 @@ static void EEPROM_ReadTemp(uint16_t addr, uint8_t *spi_buf, char *uart_buf)
 	HAL_SPI_Transmit(&hspi3, addr_buf, 2, HAL_MAX_DELAY);
 	HAL_SPI_Receive(&hspi3, spi_buf, 2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-	sprintf(uart_buf, "Offset 0x%04x: 0x%02x 0x%02x\r\n", addr, (uint8_t)spi_buf[0],
-			(uint8_t)spi_buf[1]);
-	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf),
-					  HAL_MAX_DELAY);
+	sprintf(uart_buf, "Offset 0x%04x: 0x%02x 0x%02x\r\n", addr, (uint8_t)spi_buf[0], (uint8_t)spi_buf[1]);
+	HAL_UART_Transmit(&huart2, (uint8_t *)uart_buf, strlen(uart_buf), HAL_MAX_DELAY);
 }
 
 /**
