@@ -10,7 +10,7 @@ Prototyped in [STM32CubeIDE](https://www.st.com/en/development-tools/stm32cubeid
 
 ## Build Options
 1. Download [GNU ARM Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads) and use make. 
-Then upload using the .bin, .hex, or .elf files. 
+The HAL drivers do need to be downloaded. Then upload using the .bin, .hex, or .elf files. 
 2. The .ioc file is also there to generate code using CubeMX for other IDEs. Simply copy the [main.c](Core/Src/main.c) source file after generation.
 
 
